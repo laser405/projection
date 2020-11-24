@@ -1,11 +1,13 @@
-%% written by PJH 2020.11.17~
+%% written by PJH from 2020.11.17~
 % xml read, find x, y margin, export projection image
 
-%initialization
-%clear all; clc;
+%% initialization
+clear all; clc;
+
+%% setting
+export_directory = 'C:\Users\NPL_opticroom\Documents\MATLAB\export\';
 
 %% load file
-%tif file must be smaller than 4Gb. if larger than it, this function doesn't work.
 imgfname = uigetfile('*.tif');
 trcfname = uigetfile('*.xml');
 
@@ -15,11 +17,11 @@ full_image = imread_big(imgfname);
 num_images = numel(full_image(1,1,:)); %numel(info);
 Width = info.Width;
 Height = info.Height;
+%multiplier, increase image brightness
+multiplier = 30000;
 
 %% get information about trace vector
 % read xml file
-% null1 = xmlread(trcfname);
-% type(trcfname);
 temp_trc = parseXML(trcfname); 
 num_myelin = (numel(temp_trc(2).Children) - 5 )/ 2;
 
@@ -50,41 +52,48 @@ for i1 = 1:num_myelin
         continue;
     end
     
-    if (Width < final_x || 0 > final_x)
+    if (Width < final_x || 1 > final_x)
         continue;
     end
    
-    if (Height < initial_y || 0 > initial_y)
+    if (Height < initial_y || 1 > initial_y)
         continue;
     end
     
-    if (Height < final_y || 0 > final_y)
+    if (Height < final_y || 1 > final_y)
         continue;
     end
     
-    if (num_images < initial_z || 0 > initial_z)
+    if (num_images < initial_z || 1 > initial_z)
         continue;
     end
     
-    if (num_images < final_z || 0 > final_z)
+    if (num_images < final_z || 1 > final_z)
         continue;
     end
     
     %% set export range(margin), include +-100 around vector initial, final
     %point
     export_x_right = min( [Width, max([initial_x, final_x]) + 200 ]);
-    export_x_left = max( [0, min( [initial_x, final_x]) - 200 ]) ;
+    export_x_left = max( [1, min( [initial_x, final_x]) - 200 ]) ;
     export_y_up = min( [Height, max( [initial_y, final_y]) + 200 ]) ;
-    export_y_down = max( [0, min( [initial_y, final_y]) - 200 ]) ;
-    export_z_front = max( [0, min( [initial_z, final_z]) - 10 ]);
+    export_y_down = max( [1, min( [initial_y, final_y]) - 200 ]) ;
+    export_z_front = max( [1, min( [initial_z, final_z]) - 10 ]);
     export_z_back = min( [num_images, max( [initial_z, final_z]) + 10 ]); 
+    
+    %% Adjust image histogram
+    % find image value at 0.2% and rewrite, image value
+    pixel_number_1per = fix(Width * Height * (export_z_back - export_z_front) / 500);
+    reshaped_iamge = reshape(full_image(:,:,export_z_front : export_z_back), 1,[]) ;
+    brightest_pixel = maxk(reshaped_iamge, pixel_number_1per);
+    pixel_001 = brightest_pixel(pixel_number_1per);
 
     %% image projection. comapre each pixel and overwrite brighter one. 
     % first image used as a template 
-    export_image = full_image(:,:,1);
+    export_image = full_image(:,:,export_z_front);
 
     for k = export_z_front:export_z_back
-        temp_image = full_image(:,:,k);
+        temp_image = fix(full_image(:,:,k) * (multiplier / pixel_001) );
 
         for i = export_x_left:export_x_right
             for j = export_y_down:export_y_up
@@ -97,13 +106,12 @@ for i1 = 1:num_myelin
     end
     
    %% mark initial and final point and crop export image 
-   export_image(initial_y - 3 : initial_y + 3 , initial_x - 3 : initial_x + 3) = 255;
-   export_image(final_y - 2 : final_y + 2 , final_x - 2 : final_x +2) = 255;
+   export_image(initial_y + 8 : initial_y + 10 , initial_x  - 4 : initial_x + 4) = 60000;
+   export_image(final_y + 8 : final_y + 10 , final_x - 2 : final_x +2) = 60000;
    export_image = export_image(export_y_down : export_y_up, export_x_left : export_x_right);
     
     %% export projection as a JPEG file
-    %export_image = image(export_image);
-    export_filename = strcat('C:\Users\NPL_opticroom\Documents\MATLAB\export\',myelin_name,'.png');
+    export_filename = strcat(export_directory,myelin_name,'.png');
     imwrite(export_image,export_filename,'BitDepth',16);
 
 end

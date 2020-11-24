@@ -18,11 +18,13 @@ xls_data = readtable(xlsfname);
 %% get numbers of myelin
 num_myelin = numel(xls_data(1,:));
 
+output = 0;
+
 for i1 = 1:num_myelin 
    %% chek if it is myelin, not cell body
    myelin_name = string( xls_data{i1,4} );
 
-   %% export image as one figure
+   %% export images as one figure
    % file 1; initial image, file 2; final image, file 3; full myelin
     export_filename_1 = strcat(input_directory,myelin_name,'I','.png');
     export_filename_2 = strcat(input_directory,myelin_name,'F','.png');
@@ -38,21 +40,28 @@ for i1 = 1:num_myelin
     fig2 = imread(export_filename_2);
     fig3 = imread(export_filename_3);
     
-    subplot(2, 2, 1:2);
+    t = tiledlayout(1,3,'TileSpacing','Compact','Padding','Compact');
+    
+    nexttile
     imshow(fig3);
+    title(t,myelin_name)
     
-    subplot(2,2,3);
+    nexttile
     imshow(fig1);
-    
-    subplot(2,2,4);
+    title('Start point')
+
+    nexttile
     imshow(fig2);
+    title('End point')
     
     %% indentify oligodendrocyte porperties 
-    start_continuous = input('myelin start \n 0;isolated, 1;continuous, 2;broken');
-    end_continuous = input('myelin end \n 0;isolated, 1;continuous, 2;broken');
-    start_maturation = input('maturation start \n 0;immature ,1:intermediate, 2;mature');
-    end_maturation = input('maturation end \n 0;immature ,1:intermediate, 2;mature');
+    start_continuous = input('Press any key to continue');
     
+    output  = output +1;
+end
+
+if output == 0
+    disp('wrong image or excel file');
 end
 
 %% export table as xlsx file

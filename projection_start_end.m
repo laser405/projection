@@ -1,4 +1,4 @@
-%% written by Jeonghyeon Park from 2020.11.17
+%% written by Jeonghyeon Park from 2020.11.17~
 % need xml(oligodendrocyte trace) and tiff(tissue image) with multiple images
 % unzip .traces file to get xml file
 % find x, y margin, z margin, file directory could be set
@@ -13,9 +13,10 @@ export_directory = 'C:\Users\NPL_opticroom\Documents\MATLAB\export\';
 xymargin = 200;
 zmargin = 20;
 %xls file output
-xlsoutput = 0;
-xls_export_directory = 'C:\Users\NPL_opticroom\Documents\MATLAB\export\';
-xls = zeros(1,4);
+xlsoutput = 1;
+xls_export_directory = 'C:\Users\NPL_opticroom\Documents\MATLAB\export\# OL xy 0.302 z 1 Exratio 4.xlsx';
+%multiplier, increase image brightness
+multiplier = 30000;
 
 %% load tif, xml file
 imgfname = uigetfile('*.tif');
@@ -31,6 +32,10 @@ Height = info.Height;
 %% get informations about trace vector
 temp_trc = parseXML(trcfname); 
 num_myelin = (numel(temp_trc(2).Children) - 5 )/ 2;
+
+%% xls file setting
+xls = strings(num_myelin,4);
+l = 1; 
 
 %% track myelin
 for i1 = 1:num_myelin 
@@ -55,67 +60,79 @@ for i1 = 1:num_myelin
    end
 
     %% check trace is within range
-    if (Width < initial_x || 0 > initial_x) 
+    if (Width < initial_x || 1 > initial_x) 
         continue;
     end
     
-    if (Width < final_x || 0 > final_x)
+    if (Width < final_x || 1 > final_x)
         continue;
     end
    
-    if (Height < initial_y || 0 > initial_y)
+    if (Height < initial_y || 1 > initial_y)
         continue;
     end
     
-    if (Height < final_y || 0 > final_y)
+    if (Height < final_y || 1 > final_y)
         continue;
     end
     
-    if (num_images < initial_z || 0 > initial_z)
+    if (num_images < initial_z || 1 > initial_z)
         continue;
     end
     
-    if (num_images < final_z || 0 > final_z)
+    if (num_images < final_z || 1 > final_z)
         continue;
     end
     
     %% set export range(margin), include +-100 around 
     % vector initial, final point
     export_x_right_1 = min( [Width, initial_x + xymargin ] );
-    export_x_left_1 = max( [0, initial_x - xymargin ] ) ;
+    export_x_left_1 = max( [1, initial_x - xymargin ] ) ;
     export_y_up_1 = min( [Height, initial_y + xymargin ] ) ;
-    export_y_down_1 = max( [0, initial_y - xymargin ] ) ;
-    export_z_front_1 = max( [0, initial_z - zmargin ] );
+    export_y_down_1 = max( [1, initial_y - xymargin ] ) ;
+    export_z_front_1 = max( [1, initial_z - zmargin ] );
     export_z_back_1 = min( [num_images, initial_z + zmargin ] ); 
     
     export_x_right_2 = min( [Width, final_x + xymargin ] );
-    export_x_left_2 = max( [0, final_x - xymargin ] ) ;
+    export_x_left_2 = max( [1, final_x - xymargin ] ) ;
     export_y_up_2 = min( [Height, final_y + xymargin ] ) ;
-    export_y_down_2 = max( [0, final_y - xymargin ] ) ;
-    export_z_front_2 = max( [0, final_z - zmargin ] );
+    export_y_down_2 = max( [1, final_y - xymargin ] ) ;
+    export_z_front_2 = max( [1, final_z - zmargin ] );
     export_z_back_2 = min( [num_images, final_z + zmargin ] ); 
 
+    %% Adjust image histogram
+    % find image value at 0.2% and rewrite, image value
+    pixel_number_1per = fix(Width * Height * (export_z_back_1 - export_z_front_1) / 500);
+    reshaped_iamge = reshape(full_image(:,:,export_z_front_1 : export_z_back_1), 1,[]) ;
+    brightest_pixel = maxk(reshaped_iamge, pixel_number_1per);
+    pixel_001 = brightest_pixel(pixel_number_1per);
+    
+    pixel_number_1per = fix(Width * Height * (export_z_back_2 - export_z_front_2) / 500);
+    reshaped_iamge = reshape(full_image(:,:,export_z_front_2 : export_z_back_2), 1,[]) ;
+    brightest_pixel = maxk(reshaped_iamge, pixel_number_1per);
+    pixel_002 = brightest_pixel(pixel_number_1per);
+    
     %% image projection. comapre each pixel and overwrite brighter one. 
     % first image used as a template 
     
     export_image_1 = full_image(:,:,export_z_front_1);
 
     for k = export_z_front_1 : export_z_back_1
-        temp_image = full_image(:,:,k);
-
+        temp_image =  fix(full_image(:,:,k) * (multiplier / pixel_001) );
+        
         for i = export_x_left_1 : export_x_right_1
             for j = export_y_down_1 : export_y_up_1
                 if (export_image_1(j,i) < temp_image(j,i))
                     export_image_1(j,i) = temp_image(j,i);
                 end
-            end
+            end 
         end
     end
         
     export_image_2 = full_image(:,:,export_z_front_2);
 
     for k = export_z_front_2 : export_z_back_2
-        temp_image = full_image(:,:,k);
+        temp_image = fix(full_image(:,:,k) * (multiplier / pixel_001) );
 
         for i = export_x_left_2 : export_x_right_2
             for j = export_y_down_2 : export_y_up_2
@@ -127,21 +144,23 @@ for i1 = 1:num_myelin
     end
         
    %% mark initial and final point and crop export image 
-   export_image_1(initial_y + 8 : initial_y + 10 , initial_x  - 4 : initial_x + 4) = 255;
-   export_image_2(final_y + 8 : final_y + 10 , final_x - 2 : final_x +2) = 255;
+   export_image_1(initial_y + 8 : initial_y + 10 , initial_x  - 4 : initial_x + 4) = 60000;
+   export_image_2(final_y + 8 : final_y + 10 , final_x - 2 : final_x +2) = 60000;
    export_image_1 = export_image_1(export_y_down_1 : export_y_up_1, export_x_left_1 : export_x_right_1);
    export_image_2 = export_image_2(export_y_down_2 : export_y_up_2, export_x_left_2 : export_x_right_2);
     
     %% export projection as a JPEG file
     %export_image = image(export_image);
     export_filename_1 = strcat(export_directory,myelin_name,'I','.png');
-    export_filename_2= strcat(export_directory,myelin_name,'F','.png');
+    export_filename_2 = strcat(export_directory,myelin_name,'F','.png');
     imwrite(export_image_1,export_filename_1,'BitDepth',16);
     imwrite(export_image_2,export_filename_2,'BitDepth',16);
     
     if xlsoutput == 1
-         xls(i1,4) = myelin_name; 
+         xls(l,4) = myelin_name; 
+         l = l+1;
     end
+    
 end
 
-writetable(xls_data,xls_export_directory,'Sheet',1,'Range','A1')
+writematrix(xls,xls_export_directory,'Sheet',1,'Range','A1')
