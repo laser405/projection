@@ -6,8 +6,9 @@
 clear all; clc;
  
 %% setting
-input_directory = 'C:\Users\NPL_opticroom\Documents\MATLAB\export\';
-export_directory = 'C:\Users\NPL_opticroom\Documents\MATLAB\export\export.xlsx';
+input_directory = 'C:\Users\NPL_opticroom\Documents\MATLAB\#75 mouse P50 #1 OL xy 0.302 z 1 Exratio 4\';
+%export_directory = 'C:\Users\NPL_opticroom\Documents\MATLAB\export\export.xls';
+a = 1;
 
 %% load xml file
 xlsfname = uigetfile('*.xlsx');
@@ -16,13 +17,13 @@ xlsfname = uigetfile('*.xlsx');
 xls_data = readtable(xlsfname);
 
 %% get numbers of myelin
-num_myelin = numel(xls_data(1,:));
+num_myelin = numel(xls_data(:,a));
 
 output = 0;
 
 for i1 = 1:num_myelin 
    %% chek if it is myelin, not cell body
-   myelin_name = string( xls_data{i1,4} );
+   myelin_name = string( xls_data{i1,a} );
 
    %% export images as one figure
    % file 1; initial image, file 2; final image, file 3; full myelin
@@ -44,7 +45,7 @@ for i1 = 1:num_myelin
     
     nexttile
     imshow(fig3);
-    title(t,myelin_name)
+    title(myelin_name)
     
     nexttile
     imshow(fig1);
@@ -63,6 +64,3 @@ end
 if output == 0
     disp('wrong image or excel file');
 end
-
-%% export table as xlsx file
-writetable(xls_data,export_directory,'Sheet',1,'Range','A1')
