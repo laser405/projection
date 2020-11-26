@@ -8,7 +8,7 @@ clear all; clc;
 %% setting
 input_directory = 'C:\Users\NPL_opticroom\Documents\MATLAB\#75 mouse P50 #1 OL xy 0.302 z 1 Exratio 4\';
 %export_directory = 'C:\Users\NPL_opticroom\Documents\MATLAB\export\export.xls';
-a = 1;
+a = 4;
 
 %% load xml file
 xlsfname = uigetfile('*.xlsx');
@@ -56,7 +56,11 @@ for i1 = 1:num_myelin
     title('End point')
     
     %% indentify oligodendrocyte porperties 
-    start_continuous = input('Press any key to continue');
+    start_continuous = input('Press any key to continue, r to go back','s');
+
+    if contains(start_continuous,'r')
+        i1 = i1 - 1;
+    end
     
     output  = output +1;
 end
