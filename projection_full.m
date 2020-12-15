@@ -6,6 +6,10 @@ clear all; clc;
 
 %% setting
 export_directory = 'C:\Users\NPL_opticroom\Documents\MATLAB\export\';
+% if this value is 1, check every pixel and find 0.2% value
+check_001 = 0;
+%multiplier, increase image brightness
+multiplier = 20000;
 
 %% load file
 imgfname = uigetfile('*.tif');
@@ -17,8 +21,7 @@ full_image = imread_big(imgfname);
 num_images = numel(full_image(1,1,:)); %numel(info);
 Width = info.Width;
 Height = info.Height;
-%multiplier, increase image brightness
-multiplier = 30000;
+
 
 %% get information about trace vector
 % read xml file
@@ -83,11 +86,15 @@ for i1 = 1:num_myelin
     
     %% Adjust image histogram
     % find image value at 0.2% and rewrite, image value
-    pixel_number_1per = fix(Width * Height * (export_z_back - export_z_front) / 500);
-    reshaped_iamge = reshape(full_image(:,:,export_z_front : export_z_back), 1,[]) ;
-    brightest_pixel = maxk(reshaped_iamge, pixel_number_1per);
-    pixel_001 = brightest_pixel(pixel_number_1per);
-
+    if check_001 == 1
+        pixel_number_1per = fix(Width * Height * (export_z_back - export_z_front) / 500);
+        reshaped_iamge = reshape(full_image(:,:,export_z_front : export_z_back), 1,[]);
+        brightest_pixel = maxk(reshaped_iamge, pixel_number_1per);
+        pixel_001 = brightest_pixel(pixel_number_1per);
+    else
+       pixel_001 = 150;
+    end
+        
     %% image projection. comapre each pixel and overwrite brighter one. 
     % first image used as a template 
     export_image = full_image(:,:,export_z_front);
@@ -106,8 +113,8 @@ for i1 = 1:num_myelin
     end
     
    %% mark initial and final point and crop export image 
-   export_image(initial_y + 8 : initial_y + 10 , initial_x  - 4 : initial_x + 4) = 60000;
-   export_image(final_y + 8 : final_y + 10 , final_x - 2 : final_x +2) = 60000;
+   export_image(initial_y + 8 : initial_y + 10 , max(initial_x  - 4, 1) : initial_x + 4) = 60000;
+   export_image(final_y + 8 : final_y + 10 , max(final_x - 2, 1) : final_x +2) = 60000;
    export_image = export_image(export_y_down : export_y_up, export_x_left : export_x_right);
     
     %% export projection as a JPEG file

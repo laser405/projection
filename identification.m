@@ -6,9 +6,9 @@
 clear all; clc;
  
 %% setting
-input_directory = 'C:\Users\NPL_opticroom\Documents\MATLAB\#75 mouse P50 #1 OL xy 0.302 z 1 Exratio 4\';
+input_directory = 'C:\Users\NPL_opticroom\Documents\MATLAB\#76 mouse P120 #3 OL xy 0.xml.302 z 1 Exratio 4\';
 %export_directory = 'C:\Users\NPL_opticroom\Documents\MATLAB\export\export.xls';
-a = 4;
+num_lane = 1;
 
 %% load xml file
 xlsfname = uigetfile('*.xlsx');
@@ -17,13 +17,13 @@ xlsfname = uigetfile('*.xlsx');
 xls_data = readtable(xlsfname);
 
 %% get numbers of myelin
-num_myelin = numel(xls_data(:,a));
+num_myelin = numel(xls_data(:,num_lane));
 
 output = 0;
 
 for i1 = 1:num_myelin 
    %% chek if it is myelin, not cell body
-   myelin_name = string( xls_data{i1,a} );
+   myelin_name = string( xls_data{i1,num_lane} );
 
    %% export images as one figure
    % file 1; initial image, file 2; final image, file 3; full myelin
@@ -33,7 +33,9 @@ for i1 = 1:num_myelin
     
     %% chek whether file exist
     if isfile(export_filename_1) && isfile(export_filename_2) && isfile(export_filename_3)
+        fprintf('file name:%s\n', myelin_name );
     else
+        fprintf('No file:%s\n', myelin_name );
         continue;
     end
     
@@ -57,10 +59,6 @@ for i1 = 1:num_myelin
     
     %% indentify oligodendrocyte porperties 
     start_continuous = input('Press any key to continue, r to go back','s');
-
-    if contains(start_continuous,'r')
-        i1 = i1 - 1;
-    end
     
     output  = output +1;
 end

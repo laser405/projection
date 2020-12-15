@@ -16,7 +16,9 @@ zmargin = 20;
 xlsoutput = 1;
 xls_export_directory = 'C:\Users\NPL_opticroom\Documents\MATLAB\export\# OL xy 0.302 z 1 Exratio 4.xlsx';
 %multiplier, increase image brightness
-multiplier = 30000;
+multiplier = 20000;
+% if this value is 1, check every pixel and find 0.2% value
+check_001 = 0;
 
 %% load tif, xml file
 imgfname = uigetfile('*.tif');
@@ -34,7 +36,7 @@ temp_trc = parseXML(trcfname);
 num_myelin = (numel(temp_trc(2).Children) - 5 )/ 2;
 
 %% xls file setting
-xls = strings(num_myelin,4);
+xls = strings(num_myelin,1);
 l = 1; 
 
 %% track myelin
@@ -102,15 +104,20 @@ for i1 = 1:num_myelin
 
     %% Adjust image histogram
     % find image value at 0.2% and rewrite, image value
-    pixel_number_1per = fix(Width * Height * (export_z_back_1 - export_z_front_1) / 500);
-    reshaped_iamge = reshape(full_image(:,:,export_z_front_1 : export_z_back_1), 1,[]) ;
-    brightest_pixel = maxk(reshaped_iamge, pixel_number_1per);
-    pixel_001 = brightest_pixel(pixel_number_1per);
-    
-    pixel_number_1per = fix(Width * Height * (export_z_back_2 - export_z_front_2) / 500);
-    reshaped_iamge = reshape(full_image(:,:,export_z_front_2 : export_z_back_2), 1,[]) ;
-    brightest_pixel = maxk(reshaped_iamge, pixel_number_1per);
-    pixel_002 = brightest_pixel(pixel_number_1per);
+    if check_001 == 1
+        pixel_number_1per = fix(Width * Height * (export_z_back_1 - export_z_front_1) / 500);
+        reshaped_iamge = reshape(full_image(:,:,export_z_front_1 : export_z_back_1), 1,[]) ;
+        brightest_pixel = maxk(reshaped_iamge, pixel_number_1per);
+        pixel_001 = brightest_pixel(pixel_number_1per);
+
+        pixel_number_1per = fix(Width * Height * (export_z_back_2 - export_z_front_2) / 500);
+        reshaped_iamge = reshape(full_image(:,:,export_z_front_2 : export_z_back_2), 1,[]) ;
+        brightest_pixel = maxk(reshaped_iamge, pixel_number_1per);
+        pixel_002 = brightest_pixel(pixel_number_1per);
+    else
+        pixel_001 = 150;
+        pixel_002 = 150;
+    end
     
     %% image projection. comapre each pixel and overwrite brighter one. 
     % first image used as a template 
@@ -144,8 +151,8 @@ for i1 = 1:num_myelin
     end
         
    %% mark initial and final point and crop export image 
-   export_image_1(initial_y + 8 : initial_y + 10 , initial_x  - 4 : initial_x + 4) = 60000;
-   export_image_2(final_y + 8 : final_y + 10 , final_x - 2 : final_x +2) = 60000;
+   export_image_1(initial_y + 8 : initial_y + 10 , max(1,initial_x  - 4) : initial_x + 4) = 60000;
+   export_image_2(final_y + 8 : final_y + 10 , max(1,final_x - 2) : final_x +2) = 60000;
    export_image_1 = export_image_1(export_y_down_1 : export_y_up_1, export_x_left_1 : export_x_right_1);
    export_image_2 = export_image_2(export_y_down_2 : export_y_up_2, export_x_left_2 : export_x_right_2);
     
@@ -157,8 +164,7 @@ for i1 = 1:num_myelin
     imwrite(export_image_2,export_filename_2,'BitDepth',16);
     
     if xlsoutput == 1
-         xls(l,4) = myelin_name; 
-         l = l+1;
+         xls(num_myelin + 1,1) = myelin_name; 
     end
     
 end
